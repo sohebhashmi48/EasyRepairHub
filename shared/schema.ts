@@ -1,51 +1,50 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  isRepairman: boolean("is_repairman").default(false).notNull(),
+// These type definitions will match our Supabase table structure
+export type User = {
+  id: number;
+  username: string;
+  password: string;
+  isRepairman: boolean;
+};
+
+export type Listing = {
+  id: number;
+  userId: number;
+  title: string;
+  description: string;
+  category: string;
+  imageUrl: string;
+  status: string;
+};
+
+export type Bid = {
+  id: number;
+  listingId: number;
+  repairmanId: number;
+  amount: number;
+  comment?: string;
+};
+
+// Validation schemas for data insertion
+export const insertUserSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  isRepairman: z.boolean().default(false),
 });
 
-export const listings = pgTable("listings", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
-  category: text("category").notNull(),
-  imageUrl: text("image_url").notNull(),
-  status: text("status").notNull().default("open"),
+export const insertListingSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().min(1, "Description is required"),
+  category: z.string().min(1, "Category is required"),
+  imageUrl: z.string().url("Must be a valid URL"),
 });
 
-export const bids = pgTable("bids", {
-  id: serial("id").primaryKey(),
-  listingId: integer("listing_id").notNull(),
-  repairmanId: integer("repairman_id").notNull(),
-  amount: integer("amount").notNull(),
-  comment: text("comment"),
-});
-
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  isRepairman: true,
-});
-
-export const insertListingSchema = createInsertSchema(listings).pick({
-  title: true,
-  description: true,
-  category: true,
-  imageUrl: true,
-});
-
-export const insertBidSchema = createInsertSchema(bids).pick({
-  amount: true,
-  comment: true,
+export const insertBidSchema = z.object({
+  amount: z.number().positive("Amount must be positive"),
+  comment: z.string().optional(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-export type Listing = typeof listings.$inferSelect;
-export type Bid = typeof bids.$inferSelect;
+export type InsertListing = z.infer<typeof insertListingSchema>;
+export type InsertBid = z.infer<typeof insertBidSchema>;

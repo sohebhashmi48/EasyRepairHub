@@ -33,10 +33,16 @@ export const insertUserSchema = z.object({
   isRepairman: z.boolean().default(false),
 });
 
+// Modified to make imageUrl optional during form handling
 export const insertListingSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
   category: z.string().min(1, "Category is required"),
+  imageUrl: z.string().url("Must be a valid URL").optional(),
+});
+
+// Schema for final submission
+export const finalListingSchema = insertListingSchema.extend({
   imageUrl: z.string().url("Must be a valid URL"),
 });
 

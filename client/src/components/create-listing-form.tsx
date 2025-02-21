@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertListingSchema, InsertListing } from "@shared/schema";
+import { insertListingSchema, finalListingSchema, InsertListing } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 const categories = [
   "Smartphones",
@@ -53,6 +53,14 @@ export default function CreateListingForm() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Clear previous preview and error
+    setPreview(null);
+    form.clearErrors("imageUrl");
+
+    // Create preview immediately
+    const previewUrl = URL.createObjectURL(file);
+    setPreview(previewUrl);
+
     const formData = new FormData();
     formData.append("image", file);
 
@@ -64,18 +72,24 @@ export default function CreateListingForm() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to upload image");
+        throw new Error(await response.text() || "Failed to upload image");
       }
 
       const data = await response.json();
-      form.setValue("imageUrl", data.imageUrl);
-      setPreview(URL.createObjectURL(file));
+      // Store the complete URL
+      const fullUrl = new URL(data.imageUrl, window.location.origin).toString();
+      form.setValue("imageUrl", fullUrl);
 
       toast({
         title: "Image uploaded successfully",
         description: "You can now submit your listing",
       });
     } catch (error) {
+      setPreview(null);
+      form.setError("imageUrl", {
+        type: "manual",
+        message: error instanceof Error ? error.message : "Failed to upload image",
+      });
       toast({
         title: "Error uploading image",
         description: error instanceof Error ? error.message : "Unknown error occurred",
@@ -88,6 +102,26 @@ export default function CreateListingForm() {
 
   const onSubmit = async (data: InsertListing) => {
     try {
+      // Only validate the final schema if we have an image URL
+      if (!data.imageUrl) {
+        toast({
+          title: "Validation Error",
+          description: "Please upload an image before submitting",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const validationResult = finalListingSchema.safeParse(data);
+      if (!validationResult.success) {
+        toast({
+          title: "Validation Error",
+          description: validationResult.error.errors[0]?.message || "Invalid form data",
+          variant: "destructive",
+        });
+        return;
+      }
+
       await apiRequest("POST", "/api/listings", data);
       toast({
         title: "Success",
@@ -116,7 +150,7 @@ export default function CreateListingForm() {
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} placeholder="Enter title" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -130,7 +164,7 @@ export default function CreateListingForm() {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea {...field} />
+                    <Textarea {...field} placeholder="Describe the issue with your device" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -181,7 +215,7 @@ export default function CreateListingForm() {
                           <img
                             src={preview}
                             alt="Preview"
-                            className="object-cover"
+                            className="object-cover w-full h-full"
                           />
                         </div>
                       )}
@@ -198,8 +232,11 @@ export default function CreateListingForm() {
               disabled={isUploading || form.formState.isSubmitting}
               className="w-full"
             >
-              {form.formState.isSubmitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {isUploading || form.formState.isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isUploading ? "Uploading..." : "Creating Listing..."}
+                </>
               ) : (
                 "Create Listing"
               )}

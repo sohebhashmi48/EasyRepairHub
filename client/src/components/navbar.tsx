@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, Plus } from "lucide-react";
 
 export default function Navbar() {
   const { user, logoutMutation } = useAuth();
@@ -15,20 +15,28 @@ export default function Navbar() {
   return (
     <nav className="border-b">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/">
-          <a className="text-xl font-bold text-primary">EasyRepair</a>
-        </Link>
+        <Button variant="link" className="text-xl font-bold text-primary p-0" asChild>
+          <Link href="/">EasyRepair</Link>
+        </Button>
 
         <div className="flex items-center gap-4">
           {user ? (
             <>
-              <Link href="/browse">
-                <Button variant="ghost">Browse Repairs</Button>
-              </Link>
+              <Button variant="ghost" asChild>
+                <Link href="/browse">Browse Repairs</Link>
+              </Button>
               {!user.isRepairman && (
-                <Link href="/my-devices">
-                  <Button variant="ghost">My Devices</Button>
-                </Link>
+                <>
+                  <Button variant="ghost" asChild>
+                    <Link href="/my-devices">My Devices</Link>
+                  </Button>
+                  <Button variant="default" className="gap-2" asChild>
+                    <Link href="/create-listing">
+                      <Plus className="h-4 w-4" />
+                      Create Listing
+                    </Link>
+                  </Button>
+                </>
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -37,11 +45,13 @@ export default function Navbar() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <Link href="/dashboard">
-                    <DropdownMenuItem>
-                      Dashboard
-                    </DropdownMenuItem>
-                  </Link>
+                  <Button asChild>
+                    <Link href="/dashboard">
+                      <DropdownMenuItem>
+                        Dashboard
+                      </DropdownMenuItem>
+                    </Link>
+                  </Button>
                   <DropdownMenuItem onSelect={() => logoutMutation.mutate()}>
                     <LogOut className="h-4 w-4 mr-2" />
                     Logout
@@ -50,9 +60,9 @@ export default function Navbar() {
               </DropdownMenu>
             </>
           ) : (
-            <Link href="/auth">
-              <Button>Login</Button>
-            </Link>
+            <Button asChild>
+              <Link href="/auth">Login</Link>
+            </Button>
           )}
         </div>
       </div>

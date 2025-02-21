@@ -9,18 +9,25 @@ import { z } from "zod";
 import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'public', 'uploads');
+fs.mkdirSync(uploadsDir, { recursive: true });
+console.log('Uploads directory created/verified at:', uploadsDir);
+
 // Configure multer for handling file uploads
 const multerStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, 'public/uploads/'))
+    cb(null, uploadsDir)
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname))
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
   }
 });
 
@@ -42,17 +49,19 @@ const upload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
+  // Serve uploaded files
+  app.use('/uploads', express.static(uploadsDir));
+  console.log('Serving uploads from:', uploadsDir);
+
   // Image upload endpoint
   app.post("/api/upload", upload.single('image'), (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
     const imageUrl = `/uploads/${req.file.filename}`;
+    console.log('File uploaded successfully:', imageUrl);
     res.json({ imageUrl });
   });
-
-  // Serve uploaded files
-  app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
   // Listings
   app.get("/api/listings", async (req, res) => {

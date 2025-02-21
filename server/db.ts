@@ -13,3 +13,22 @@ if (!process.env.DATABASE_URL) {
 
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export const db = drizzle({ client: pool, schema });
+
+// Run migrations
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+async function runMigrations() {
+  try {
+    const sql = readFileSync(join(__dirname, 'migrations.sql'), 'utf8');
+    await pool.query(sql);
+    console.log('Migrations completed successfully');
+  } catch (error) {
+    // Ignore if tables already exist
+    if (!(error as any).message?.includes('already exists')) {
+      console.error('Error running migrations:', error);
+    }
+  }
+}
+
+runMigrations();

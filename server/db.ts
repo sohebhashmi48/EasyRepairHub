@@ -21,13 +21,14 @@ import { join } from 'path';
 async function runMigrations() {
   try {
     const sql = readFileSync(join(__dirname, 'migrations.sql'), 'utf8');
-    await pool.query(sql);
+    // Split into individual statements and execute
+    const statements = sql.split(';').filter(stmt => stmt.trim());
+    for (const statement of statements) {
+      await supabase.from('_migrations').rpc('raw_sql', { sql: statement });
+    }
     console.log('Migrations completed successfully');
   } catch (error) {
-    // Ignore if tables already exist
-    if (!(error as any).message?.includes('already exists')) {
-      console.error('Error running migrations:', error);
-    }
+    console.error('Error running migrations:', error);
   }
 }
 

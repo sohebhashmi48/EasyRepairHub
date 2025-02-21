@@ -13,19 +13,13 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANO
 
 export interface IStorage {
   sessionStore: session.Store;
-
-  // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-
-  // Listing operations
   createListing(listing: InsertListing & { userId: number }): Promise<Listing>;
   getListing(id: number): Promise<Listing | undefined>;
   getListings(): Promise<Listing[]>;
   getListingsByCategory(category: string): Promise<Listing[]>;
-
-  // Bid operations
   createBid(bid: InsertBid & { listingId: number; repairmanId: number }): Promise<Bid>;
   getBidsForListing(listingId: number): Promise<Bid[]>;
 }
@@ -48,7 +42,14 @@ export class SupabaseStorage implements IStorage {
         .single();
 
       if (error) throw error;
-      return data as User || undefined;
+      if (!data) return undefined;
+
+      return {
+        id: data.id,
+        username: data.username,
+        password: data.password,
+        isRepairman: data.is_repairman,
+      };
     } catch (error) {
       console.error('Error getting user:', error);
       return undefined;
@@ -64,10 +65,17 @@ export class SupabaseStorage implements IStorage {
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') return undefined; // No rows returned
+        if (error.code === 'PGRST116') return undefined;
         throw error;
       }
-      return data as User;
+      if (!data) return undefined;
+
+      return {
+        id: data.id,
+        username: data.username,
+        password: data.password,
+        isRepairman: data.is_repairman,
+      };
     } catch (error) {
       console.error('Error getting user by username:', error);
       return undefined;
@@ -78,12 +86,23 @@ export class SupabaseStorage implements IStorage {
     try {
       const { data, error } = await supabase
         .from('users')
-        .insert([insertUser])
+        .insert([{
+          username: insertUser.username,
+          password: insertUser.password,
+          is_repairman: insertUser.isRepairman,
+        }])
         .select()
         .single();
 
       if (error) throw error;
-      return data as User;
+      if (!data) throw new Error('No data returned after creating user');
+
+      return {
+        id: data.id,
+        username: data.username,
+        password: data.password,
+        isRepairman: data.is_repairman,
+      };
     } catch (error) {
       console.error('Error creating user:', error);
       throw new Error('Failed to create user');
@@ -94,12 +113,29 @@ export class SupabaseStorage implements IStorage {
     try {
       const { data, error } = await supabase
         .from('listings')
-        .insert([{ ...listing, status: 'open' }])
+        .insert([{
+          user_id: listing.userId,
+          title: listing.title,
+          description: listing.description,
+          category: listing.category,
+          image_url: listing.imageUrl,
+          status: 'open',
+        }])
         .select()
         .single();
 
       if (error) throw error;
-      return data as Listing;
+      if (!data) throw new Error('No data returned after creating listing');
+
+      return {
+        id: data.id,
+        userId: data.user_id,
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        imageUrl: data.image_url,
+        status: data.status,
+      };
     } catch (error) {
       console.error('Error creating listing:', error);
       throw new Error('Failed to create listing');
@@ -118,7 +154,17 @@ export class SupabaseStorage implements IStorage {
         if (error.code === 'PGRST116') return undefined;
         throw error;
       }
-      return data as Listing;
+      if (!data) return undefined;
+
+      return {
+        id: data.id,
+        userId: data.user_id,
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        imageUrl: data.image_url,
+        status: data.status,
+      };
     } catch (error) {
       console.error('Error getting listing:', error);
       return undefined;
@@ -132,7 +178,17 @@ export class SupabaseStorage implements IStorage {
         .select();
 
       if (error) throw error;
-      return data as Listing[];
+      if (!data) return [];
+
+      return data.map(item => ({
+        id: item.id,
+        userId: item.user_id,
+        title: item.title,
+        description: item.description,
+        category: item.category,
+        imageUrl: item.image_url,
+        status: item.status,
+      }));
     } catch (error) {
       console.error('Error getting listings:', error);
       return [];
@@ -147,7 +203,17 @@ export class SupabaseStorage implements IStorage {
         .eq('category', category);
 
       if (error) throw error;
-      return data as Listing[];
+      if (!data) return [];
+
+      return data.map(item => ({
+        id: item.id,
+        userId: item.user_id,
+        title: item.title,
+        description: item.description,
+        category: item.category,
+        imageUrl: item.image_url,
+        status: item.status,
+      }));
     } catch (error) {
       console.error('Error getting listings by category:', error);
       return [];
@@ -158,12 +224,25 @@ export class SupabaseStorage implements IStorage {
     try {
       const { data, error } = await supabase
         .from('bids')
-        .insert([bid])
+        .insert([{
+          listing_id: bid.listingId,
+          repairman_id: bid.repairmanId,
+          amount: bid.amount,
+          comment: bid.comment,
+        }])
         .select()
         .single();
 
       if (error) throw error;
-      return data as Bid;
+      if (!data) throw new Error('No data returned after creating bid');
+
+      return {
+        id: data.id,
+        listingId: data.listing_id,
+        repairmanId: data.repairman_id,
+        amount: data.amount,
+        comment: data.comment,
+      };
     } catch (error) {
       console.error('Error creating bid:', error);
       throw new Error('Failed to create bid');
@@ -175,10 +254,18 @@ export class SupabaseStorage implements IStorage {
       const { data, error } = await supabase
         .from('bids')
         .select()
-        .eq('listingId', listingId);
+        .eq('listing_id', listingId);
 
       if (error) throw error;
-      return data as Bid[];
+      if (!data) return [];
+
+      return data.map(item => ({
+        id: item.id,
+        listingId: item.listing_id,
+        repairmanId: item.repairman_id,
+        amount: item.amount,
+        comment: item.comment,
+      }));
     } catch (error) {
       console.error('Error getting bids:', error);
       return [];

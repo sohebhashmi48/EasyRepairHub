@@ -1,4 +1,4 @@
-import { User, InsertUser, Listing, InsertListing, Bid, InsertBid } from "@shared/schema";
+import { User, InsertUser, Listing, InsertListing, Bid, InsertBid, ChatMessage, InsertChatMessage } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { createClient } from '@supabase/supabase-js';
@@ -24,6 +24,8 @@ export interface IStorage {
   getBidsForListing(listingId: number): Promise<Bid[]>;
   deleteListing(id: number): Promise<void>; 
   acceptBid(listingId: number, bidId: number): Promise<void>;
+  createChatMessage(message: InsertChatMessage & { listingId: number; senderId: number }): Promise<ChatMessage>;
+  getChatMessages(listingId: number): Promise<ChatMessage[]>;
 }
 
 export class SupabaseStorage implements IStorage {
@@ -323,6 +325,59 @@ export class SupabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error accepting bid:', error);
       throw new Error('Failed to accept bid');
+    }
+  }
+
+  async createChatMessage(message: InsertChatMessage & { listingId: number; senderId: number }): Promise<ChatMessage> {
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .insert([{
+          listing_id: message.listingId,
+          sender_id: message.senderId,
+          message: message.message,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (!data) throw new Error('No data returned after creating message');
+
+      return {
+        id: data.id,
+        listingId: data.listing_id,
+        senderId: data.sender_id,
+        message: data.message,
+        createdAt: data.created_at,
+      };
+    } catch (error) {
+      console.error('Error creating chat message:', error);
+      throw new Error('Failed to create chat message');
+    }
+  }
+
+  async getChatMessages(listingId: number): Promise<ChatMessage[]> {
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select()
+        .eq('listing_id', listingId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      if (!data) return [];
+
+      return data.map(item => ({
+        id: item.id,
+        listingId: item.listing_id,
+        senderId: item.sender_id,
+        message: item.message,
+        createdAt: item.created_at,
+      }));
+    } catch (error) {
+      console.error('Error getting chat messages:', error);
+      return [];
     }
   }
 }

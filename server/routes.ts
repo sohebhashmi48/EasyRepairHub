@@ -1,8 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from 'ws';
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertListingSchema, insertBidSchema } from "@shared/schema";
+import { insertListingSchema, insertBidSchema, insertChatMessageSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import { z } from "zod";
@@ -11,6 +12,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fs from 'fs';
 
+// Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -185,6 +187,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add this endpoint after the existing chat-related code
+  app.get("/api/listings/:listingId/messages", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const listingId = parseInt(req.params.listingId);
+    if (isNaN(listingId)) {
+      return res.status(400).json({ message: "Invalid listing ID" });
+    }
+
+    try {
+      const messages = await storage.getChatMessages(listingId);
+      res.json(messages);
+    } catch (error) {
+      console.error('Error fetching chat messages:', error);
+      res.status(500).json({ message: "Failed to fetch chat messages" });
+    }
+  });
+
+
   const httpServer = createServer(app);
+
+  // WebSocket setup
+  const wss = new WebSocketServer({ 
+    server: httpServer,
+    path: '/ws'
+  });
+
+  // Store active connections
+  const connections = new Map<number, WebSocket>();
+
+  wss.on('connection', (ws: WebSocket) => {
+    console.log('New WebSocket connection');
+
+    ws.on('message', async (data: string) => {
+      try {
+        const message = JSON.parse(data);
+
+        // Validate the message format
+        if (!message.type || !message.data) {
+          throw new Error('Invalid message format');
+        }
+
+        switch (message.type) {
+          case 'auth':
+            // Store the connection with the user ID
+            connections.set(message.data.userId, ws);
+            break;
+
+          case 'chat':
+            const validatedMessage = insertChatMessageSchema.parse(message.data);
+            const { listingId, recipientId } = message.data;
+
+            // Store the message
+            const savedMessage = await storage.createChatMessage({
+              ...validatedMessage,
+              listingId,
+              senderId: message.data.senderId,
+            });
+
+            // Send to recipient if online
+            const recipientWs = connections.get(recipientId);
+            if (recipientWs && recipientWs.readyState === WebSocket.OPEN) {
+              recipientWs.send(JSON.stringify({
+                type: 'chat',
+                data: savedMessage
+              }));
+            }
+            break;
+        }
+      } catch (error) {
+        console.error('WebSocket error:', error);
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: error instanceof Error ? error.message : 'Unknown error'
+        }));
+      }
+    });
+
+    ws.on('close', () => {
+      // Remove connection when closed
+      connections.forEach((socket, userId) => {
+        if (socket === ws) {
+          connections.delete(userId);
+        }
+      });
+    });
+  });
+
   return httpServer;
 }

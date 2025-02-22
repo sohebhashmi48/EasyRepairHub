@@ -9,6 +9,7 @@ import AuthPage from "@/pages/auth-page";
 import DashboardPage from "@/pages/dashboard-page";
 import CreateListingPage from "@/pages/create-listing-page";
 import CategoryPage from "@/pages/category-page";
+import BrowseRepairsPage from "@/pages/browse-repairs";
 import { ProtectedRoute } from "./lib/protected-route";
 import Navbar from "@/components/navbar";
 
@@ -18,6 +19,7 @@ function Router() {
       <Navbar />
       <Switch>
         <Route path="/" component={HomePage} />
+        <Route path="/browse" component={BrowseRepairsPage} />
         <ProtectedRoute path="/dashboard" component={DashboardPage} />
         <ProtectedRoute path="/create-listing" component={CreateListingPage} />
         <Route path="/category/:category" component={CategoryPage} />

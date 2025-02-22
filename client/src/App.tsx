@@ -34,8 +34,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router />
-        <Toaster />
+        <ThemeProvider defaultTheme="system">
+          <Router />
+          <Toaster />
+        </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

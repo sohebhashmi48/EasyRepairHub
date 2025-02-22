@@ -70,8 +70,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/listings/category/:category", async (req, res) => {
-    const listings = await storage.getListingsByCategory(req.params.category);
-    res.json(listings);
+    console.log('Fetching listings for category:', req.params.category);
+    try {
+      const listings = await storage.getListingsByCategory(req.params.category);
+      console.log('Found listings:', listings.length);
+      console.log('Listings:', JSON.stringify(listings, null, 2));
+      res.json(listings);
+    } catch (error) {
+      console.error('Error fetching category listings:', error);
+      res.status(500).json({ message: "Failed to fetch listings" });
+    }
   });
 
   app.post("/api/listings", async (req, res) => {
@@ -87,6 +95,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       userId: req.user.id,
     });
     res.status(201).json(listing);
+  });
+
+  // Update the delete endpoint with better error handling
+  app.delete("/api/listings/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      console.log('Unauthorized delete attempt');
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const listingId = parseInt(req.params.id);
+    if (isNaN(listingId)) {
+      console.log('Invalid listing ID:', req.params.id);
+      return res.status(400).json({ message: "Invalid listing ID" });
+    }
+
+    try {
+      const listing = await storage.getListing(listingId);
+      if (!listing) {
+        console.log('Listing not found:', listingId);
+        return res.status(404).json({ message: "Listing not found" });
+      }
+
+      if (listing.userId !== req.user.id) {
+        console.log('Unauthorized delete - User:', req.user.id, 'Listing owner:', listing.userId);
+        return res.status(403).json({ message: "Not authorized to delete this listing" });
+      }
+
+      await storage.deleteListing(listingId);
+      console.log('Listing deleted successfully:', listingId);
+      res.status(200).json({ message: "Listing deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting listing:', error);
+      res.status(500).json({ message: "Failed to delete listing" });
+    }
   });
 
   // Bids
@@ -115,6 +157,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const listingId = parseInt(req.params.listingId);
     const bids = await storage.getBidsForListing(listingId);
     res.json(bids);
+  });
+
+  app.post("/api/listings/:listingId/accept-bid/:bidId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const listingId = parseInt(req.params.listingId);
+    const bidId = parseInt(req.params.bidId);
+
+    try {
+      const listing = await storage.getListing(listingId);
+      if (!listing) {
+        return res.status(404).json({ message: "Listing not found" });
+      }
+
+      if (listing.userId !== req.user.id) {
+        return res.status(403).json({ message: "Not authorized to accept bids for this listing" });
+      }
+
+      await storage.acceptBid(listingId, bidId);
+      res.json({ message: "Bid accepted successfully" });
+    } catch (error) {
+      console.error('Error accepting bid:', error);
+      res.status(500).json({ message: "Failed to accept bid" });
+    }
   });
 
   const httpServer = createServer(app);

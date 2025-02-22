@@ -1,13 +1,6 @@
 import { z } from "zod";
 
-// These type definitions will match our Supabase table structure
-export type User = {
-  id: number;
-  username: string;
-  password: string;
-  isRepairman: boolean;
-};
-
+// Update the Listing type to include createdAt
 export type Listing = {
   id: number;
   userId: number;
@@ -16,14 +9,19 @@ export type Listing = {
   category: string;
   imageUrl: string;
   status: string;
+  budget?: number;
+  createdAt: string;
 };
 
+// Update the Bid type to include status
 export type Bid = {
   id: number;
   listingId: number;
   repairmanId: number;
   amount: number;
   comment?: string;
+  status?: string;
+  createdAt: string;
 };
 
 // Validation schemas for data insertion
@@ -39,6 +37,7 @@ export const insertListingSchema = z.object({
   description: z.string().min(1, "Description is required"),
   category: z.string().min(1, "Category is required"),
   imageUrl: z.string().url("Must be a valid URL").optional(),
+  budget: z.number().min(1, "Budget must be greater than 0").optional(),
 });
 
 // Schema for final submission

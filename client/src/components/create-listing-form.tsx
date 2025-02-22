@@ -46,6 +46,7 @@ export default function CreateListingForm() {
       description: "",
       category: "",
       imageUrl: "",
+      budget: undefined, // Added default value for budget
     },
   });
 
@@ -191,6 +192,28 @@ export default function CreateListingForm() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Added Budget Field */}
+            <FormField
+              control={form.control}
+              name="budget"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Budget (Optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="Enter your budget"
+                      {...field}
+                      onChange={(e) =>
+                        field.onChange(e.target.value ? Number(e.target.value) : undefined)
+                      }
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

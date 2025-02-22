@@ -22,6 +22,8 @@ export interface IStorage {
   getListingsByCategory(category: string): Promise<Listing[]>;
   createBid(bid: InsertBid & { listingId: number; repairmanId: number }): Promise<Bid>;
   getBidsForListing(listingId: number): Promise<Bid[]>;
+  deleteListing(id: number): Promise<void>; 
+  acceptBid(listingId: number, bidId: number): Promise<void>;
 }
 
 export class SupabaseStorage implements IStorage {
@@ -164,6 +166,8 @@ export class SupabaseStorage implements IStorage {
         category: data.category,
         imageUrl: data.image_url,
         status: data.status,
+        budget: data.budget,
+        createdAt: data.created_at,
       };
     } catch (error) {
       console.error('Error getting listing:', error);
@@ -188,6 +192,8 @@ export class SupabaseStorage implements IStorage {
         category: item.category,
         imageUrl: item.image_url,
         status: item.status,
+        budget: item.budget,
+        createdAt: item.created_at,
       }));
     } catch (error) {
       console.error('Error getting listings:', error);
@@ -200,7 +206,7 @@ export class SupabaseStorage implements IStorage {
       const { data, error } = await supabase
         .from('listings')
         .select()
-        .eq('category', category);
+        .ilike('category', category);
 
       if (error) throw error;
       if (!data) return [];
@@ -213,6 +219,8 @@ export class SupabaseStorage implements IStorage {
         category: item.category,
         imageUrl: item.image_url,
         status: item.status,
+        budget: item.budget,
+        createdAt: item.created_at,
       }));
     } catch (error) {
       console.error('Error getting listings by category:', error);
@@ -269,6 +277,42 @@ export class SupabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting bids:', error);
       return [];
+    }
+  }
+
+  async deleteListing(id: number): Promise<void> { 
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting listing:', error);
+      throw new Error('Failed to delete listing');
+    }
+  }
+
+  async acceptBid(listingId: number, bidId: number): Promise<void> {
+    try {
+      const { error: updateError } = await supabase
+        .from('listings')
+        .update({ status: 'in_progress' })
+        .eq('id', listingId);
+
+      if (updateError) throw updateError;
+
+      const { error: bidError } = await supabase
+        .from('bids')
+        .update({ status: 'accepted' })
+        .eq('id', bidId)
+        .eq('listing_id', listingId);
+
+      if (bidError) throw bidError;
+    } catch (error) {
+      console.error('Error accepting bid:', error);
+      throw new Error('Failed to accept bid');
     }
   }
 }

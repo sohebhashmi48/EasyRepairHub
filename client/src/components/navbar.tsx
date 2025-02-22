@@ -7,7 +7,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut, Plus } from "lucide-react";
+import { User, LogOut, Plus, Moon, Sun } from "lucide-react";
+import { useTheme } from "@/components/theme-provider";
 
 export default function Navbar() {
   const { user, logoutMutation } = useAuth();
@@ -52,6 +53,14 @@ export default function Navbar() {
                       </DropdownMenuItem>
                     </Link>
                   </Button>
+                  <DropdownMenuItem onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+                    {theme === "dark" ? (
+                      <Sun className="h-4 w-4 mr-2" />
+                    ) : (
+                      <Moon className="h-4 w-4 mr-2" />
+                    )}
+                    {theme === "dark" ? "Light" : "Dark"} Mode
+                  </DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => logoutMutation.mutate()}>
                     <LogOut className="h-4 w-4 mr-2" />
                     Logout

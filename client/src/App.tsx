@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/toaster";
-import AppRouter from "./AppRouter";
+import MainRouter from "./AppRouter";
 import { ThemeProvider } from "@/components/theme-provider";
 
 const queryClient = new QueryClient();
@@ -11,7 +11,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light">
         <AuthProvider>
-          <AppRouter />
+          <MainRouter />
           <Toaster />
         </AuthProvider>
       </ThemeProvider>
@@ -31,7 +31,7 @@ import BrowseRepairsPage from "@/pages/browse-repairs";
 import { ProtectedRoute } from "./lib/protected-route";
 import Navbar from "@/components/navbar";
 
-function AppRouter() {
+function MainRouter() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -48,4 +48,4 @@ function AppRouter() {
   );
 }
 
-export default AppRouter;
+export default MainRouter;

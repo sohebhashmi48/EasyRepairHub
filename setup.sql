@@ -19,6 +19,7 @@ CREATE TABLE listings (
   description TEXT NOT NULL,
   category TEXT NOT NULL,
   image_url TEXT NOT NULL,
+  budget DECIMAL,
   status TEXT NOT NULL DEFAULT 'open',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

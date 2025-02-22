@@ -27,11 +27,10 @@ export default function AuthPage() {
     defaultValues: { username: "", password: "", isRepairman: false },
   });
 
-  useEffect(() => {
-    if (user) {
-      setLocation("/");
-    }
-  }, [user, setLocation]);
+  if (user) {
+    setLocation("/");
+    return null;
+  }
 
   return (
     <div className="min-h-screen grid md:grid-cols-2">

@@ -1,9 +1,8 @@
-
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AuthProvider } from "@/hooks/use-auth";
-import { Toaster } from "@/components/ui/toaster";
-import { ThemeProvider } from "@/components/theme-provider";
 import { Switch, Route } from "wouter";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { AuthProvider } from "./hooks/use-auth";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
@@ -14,9 +13,7 @@ import BrowseRepairsPage from "@/pages/browse-repairs";
 import { ProtectedRoute } from "./lib/protected-route";
 import Navbar from "@/components/navbar";
 
-const queryClient = new QueryClient();
-
-function MainRouter() {
+function Router() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -33,15 +30,15 @@ function MainRouter() {
   );
 }
 
-export default function App() {
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light">
-        <AuthProvider>
-          <MainRouter />
-          <Toaster />
-        </AuthProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <Router />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
+
+export default App;

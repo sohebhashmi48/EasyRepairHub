@@ -1,6 +1,14 @@
 import { z } from "zod";
 
-// Update the Listing type to include createdAt
+// User type definition
+export type User = {
+  id: number;
+  username: string;
+  password: string;
+  isRepairman: boolean;
+};
+
+// Listing type
 export type Listing = {
   id: number;
   userId: number;
@@ -13,7 +21,7 @@ export type Listing = {
   createdAt: string;
 };
 
-// Update the Bid type to include status
+// Bid type
 export type Bid = {
   id: number;
   listingId: number;

@@ -121,7 +121,9 @@ export class SupabaseStorage implements IStorage {
           description: listing.description,
           category: listing.category,
           image_url: listing.imageUrl,
+          budget: listing.budget,
           status: 'open',
+          created_at: new Date().toISOString()
         }])
         .select()
         .single();
@@ -137,6 +139,8 @@ export class SupabaseStorage implements IStorage {
         category: data.category,
         imageUrl: data.image_url,
         status: data.status,
+        budget: data.budget,
+        createdAt: data.created_at,
       };
     } catch (error) {
       console.error('Error creating listing:', error);
@@ -237,6 +241,8 @@ export class SupabaseStorage implements IStorage {
           repairman_id: bid.repairmanId,
           amount: bid.amount,
           comment: bid.comment,
+          status: 'pending',
+          created_at: new Date().toISOString()
         }])
         .select()
         .single();
@@ -250,6 +256,8 @@ export class SupabaseStorage implements IStorage {
         repairmanId: data.repairman_id,
         amount: data.amount,
         comment: data.comment,
+        status: data.status,
+        createdAt: data.created_at,
       };
     } catch (error) {
       console.error('Error creating bid:', error);
@@ -273,6 +281,8 @@ export class SupabaseStorage implements IStorage {
         repairmanId: item.repairman_id,
         amount: item.amount,
         comment: item.comment,
+        status: item.status,
+        createdAt: item.created_at,
       }));
     } catch (error) {
       console.error('Error getting bids:', error);

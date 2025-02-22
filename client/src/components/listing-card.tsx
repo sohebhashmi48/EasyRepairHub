@@ -1,13 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Listing } from "@shared/schema";
+import { Listing, Bid } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
-import { Trash2, Clock } from "lucide-react";
+import { Trash2, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistance } from "date-fns";
 import BidForm from "./bid-form";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 interface ListingCardProps {
   listing: Listing;
@@ -16,6 +18,12 @@ interface ListingCardProps {
 export default function ListingCard({ listing }: ListingCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [showBids, setShowBids] = useState(false);
+
+  const { data: bids = [] } = useQuery<Bid[]>({
+    queryKey: [`/api/listings/${listing.id}/bids`],
+    enabled: showBids,
+  });
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this listing?")) {
@@ -42,6 +50,7 @@ export default function ListingCard({ listing }: ListingCardProps) {
     try {
       await apiRequest("POST", `/api/listings/${listing.id}/accept-bid/${bidId}`);
       queryClient.invalidateQueries({ queryKey: ["/api/listings"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/listings/${listing.id}/bids`] });
       toast({
         title: "Success",
         description: "Bid accepted successfully",
@@ -101,12 +110,55 @@ export default function ListingCard({ listing }: ListingCardProps) {
           {listing.description}
         </p>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <Badge variant="outline">{listing.category}</Badge>
           {user?.isRepairman && listing.status === "open" && (
             <BidForm listingId={listing.id} />
           )}
         </div>
+
+        {/* Show bids section */}
+        {(user?.id === listing.userId || user?.isRepairman) && (
+          <div className="mt-4 border-t pt-4">
+            <Button 
+              variant="ghost" 
+              className="w-full flex items-center justify-between" 
+              onClick={() => setShowBids(!showBids)}
+            >
+              Show Bids {showBids ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+
+            {showBids && (
+              <div className="mt-4 space-y-4">
+                {bids.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center">No bids yet</p>
+                ) : (
+                  bids.map((bid) => (
+                    <div key={bid.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <div>
+                        <p className="font-medium">${bid.amount}</p>
+                        {bid.comment && (
+                          <p className="text-sm text-muted-foreground mt-1">{bid.comment}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatDistance(new Date(bid.createdAt), new Date(), { addSuffix: true })}
+                        </p>
+                      </div>
+                      {user?.id === listing.userId && listing.status === "open" && (
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleAcceptBid(bid.id)}
+                        >
+                          Accept Bid
+                        </Button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

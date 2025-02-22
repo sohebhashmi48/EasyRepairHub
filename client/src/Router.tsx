@@ -1,25 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AuthProvider } from "@/hooks/use-auth";
-import { Toaster } from "@/components/ui/toaster";
-import Router from "./Router";
-import { ThemeProvider } from "@/components/theme-provider";
 
-const queryClient = new QueryClient();
-
-export default function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light">
-        <AuthProvider>
-          <Router />
-          <Toaster />
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
-  );
-}
-
-//Router.tsx
 import { Switch, Route } from "wouter";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home-page";
@@ -31,7 +10,7 @@ import BrowseRepairsPage from "@/pages/browse-repairs";
 import { ProtectedRoute } from "./lib/protected-route";
 import Navbar from "@/components/navbar";
 
-function Router() {
+export default function Router() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -47,5 +26,3 @@ function Router() {
     </div>
   );
 }
-
-export default Router;

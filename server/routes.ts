@@ -248,13 +248,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
               senderId: message.data.senderId,
             });
 
-            // Send to recipient if online
+            // Send to both recipient and sender
             const recipientWs = connections.get(recipientId);
+            const senderWs = connections.get(message.data.senderId);
+            
+            const messagePayload = JSON.stringify({
+              type: 'chat',
+              data: savedMessage
+            });
+
             if (recipientWs && recipientWs.readyState === WebSocket.OPEN) {
-              recipientWs.send(JSON.stringify({
-                type: 'chat',
-                data: savedMessage
-              }));
+              recipientWs.send(messagePayload);
+            }
+            
+            if (senderWs && senderWs.readyState === WebSocket.OPEN) {
+              senderWs.send(messagePayload);
             }
             break;
         }

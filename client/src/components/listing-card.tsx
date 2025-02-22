@@ -176,7 +176,7 @@ export default function ListingCard({ listing }: ListingCardProps) {
               )}
             </div>
           )}
-          {listing.status === "in_progress" && selectedBid && (
+          {listing.status === "in_progress" && selectedBid && selectedBid.status === "accepted" && (
             <div className="mt-4 border-t pt-4">
               <Button
                 variant="outline"
